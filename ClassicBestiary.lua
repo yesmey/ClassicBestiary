@@ -2,9 +2,7 @@
 
 local DB = _G["ClassicBestiary"]
 
-local hook_installed = false
-
-local function on_tooltip_set_unit()
+local function onTooltip()
   local name, id = GameTooltip:GetUnit()
   local _, _, _, _, _, npcIDStr = strsplit("-", UnitGUID(id))
   if not npcIDStr then return end
