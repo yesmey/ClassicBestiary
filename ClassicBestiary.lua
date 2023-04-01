@@ -6,9 +6,10 @@ local hook_installed = false
 
 local function on_tooltip_set_unit()
   local name, id = GameTooltip:GetUnit()
-  local guid_frag = (UnitGUID(id)):reverse():sub(12)
-  local hep_pos = guid_frag:find("-")
-  local npc_id = tonumber(guid_frag:sub(1, hep_pos - 1):reverse())
+  local _, _, _, _, _, npcIDStr = strsplit("-", UnitGUID(id))
+  if not npcIDStr then return end
+
+  local npc_id = tonumber(npcIDStr)
   local abilities = DB.map[npc_id]
 
   if abilities ~= nil then
@@ -23,17 +24,12 @@ local function on_tooltip_set_unit()
         
         local tip = GetSpellDescription(spell_id)
         local range = ""
-        local interruptable = ""
 
         if maxRange and maxRange > 0 and maxRange < 50 then
             range = "(" .. tostring(maxRange) .. " yd)"
         end
-        
-        if (DB.i[spell_id] == 0) then
-           interruptable = "(interruptable)"
-        end
 
-        GameTooltip:AddLine(icon .. " " .. name .. " " .. range .. " " .. interruptable)
+        GameTooltip:AddLine(icon .. " " .. name .. " " .. range)
         if IsControlKeyDown() then
           GameTooltip:AddLine(tip, 0.8, 0.8, 0.8, true)
         end
