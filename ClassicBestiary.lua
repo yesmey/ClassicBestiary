@@ -44,7 +44,6 @@ local function onTooltip()
             GameTooltip:SetWidth(700)
           end
         end)
-        -- GameTooltip:AddLine(tip, 0.8, 0.8, 0.8, true)
       end
     end
   end
