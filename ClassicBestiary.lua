@@ -43,6 +43,7 @@ local function onTooltip()
           if GameTooltip:GetWidth() > 700 then
             GameTooltip:SetWidth(700)
           end
+          GameTooltip:Show() -- Refresh size
         end)
       end
     end
