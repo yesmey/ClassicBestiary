@@ -5,13 +5,12 @@ local Spell = Spell
 
 local function onTooltip()
   local name, id = GameTooltip:GetUnit()
-  local _, _, _, _, _, npcIDStr = strsplit("-", UnitGUID(id))
-  if not npcIDStr then
+  local unitType, _, _, _, _, npcIDStr = strsplit("-", UnitGUID(id))
+  if not npcIDStr or unitType ~= "Creature" then
     return
   end
 
-  local npc_id = tonumber(npcIDStr)
-  local abilities = DB.map[npc_id]
+  local abilities = DB.map[tonumber(npcIDStr)]
   if not abilities then
     return
   end
