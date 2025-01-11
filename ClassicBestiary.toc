@@ -3,7 +3,7 @@
 ## Author: Yesmey
 
 ## Interface: 11505
-## Version: 1.0.6
+## Version: 1.0.7
 
 db.lua
 ClassicBestiary.lua
