@@ -3,81 +3,105 @@
 local DB = _G["ClassicBestiary"]
 local Spell = Spell
 
-local function onTooltip()
-  local name, id = GameTooltip:GetUnit()
-  local unitType, _, _, _, _, npcIDStr = strsplit("-", UnitGUID(id))
+CB = {}
+CB.mechanicMap = {
+  [1] = "Charms",
+  [2] = "Disorients",
+  [3] = "Disarms",
+  [5] = "Fears",
+  [7] = "Roots",
+  [9] = "Silences",
+  [10] = "Sleeps",
+  [11] = "Snares",
+  [12] = "Stuns",
+  [13] = "Freezes",
+  [14] = "Incapacitates",
+  [15] = "Bleed",
+  [17] = "Polymorph",
+  [18] = "Banishes",
+  [19] = "Shield",
+  [25] = "Invulnerable",
+  [26] = "Interrupts"
+};
 
-  -- Return if its not a Creature
-  if not npcIDStr or unitType ~= "Creature" then
-    return
-  end
+function CB:onTooltip()
+  local name, unitID = GameTooltip:GetUnit()
+  if not unitID then return end
+
+  local unitGUID = UnitGUID(unitID)
+  if not unitGUID then return end
+
+  local unitType, _, _, _, _, npcIDStr = strsplit("-", unitGUID or "")
   
-  -- Return if its not neutral or hostile
-  local reaction = UnitReaction("player", id)
-  if reaction and reaction >= 5 then
-    return
-  end
+  -- Return if it's not a Creature
+  if unitType ~= "Creature" or not npcIDStr then return end
+  
+  -- Return if it's not neutral or hostile
+  local reaction = UnitReaction("player", unitID)
+  if reaction and reaction >= 5 then return end
 
   if IsControlKeyDown() then
-    mainSpeed, offSpeed = UnitAttackSpeed(id);
-    if mainSpeed < 2 or offSpeed ~= nil then
-      GameTooltip:AddLine("Fast Attack", 1, 0.3, 0.3);
-    elseif mainSpeed > 2 then
-      GameTooltip:AddLine("Slow Attack", 0.2, 1, 0.5);
-    end
-    else then
-      GameTooltip:AddLine("Normal Attack", 0.2, 1, 0.5);
+    local mainSpeed, offSpeed = UnitAttackSpeed(unitID)
+    if mainSpeed < 2 or offSpeed then
+      GameTooltip:AddLine("Fast Attack Speed", 1, 0.3, 0.3)
     end
   end
 
-  local abilities = DB.map[tonumber(npcIDStr)]
-  if not abilities then
-    return
-  end
+  local abilities = DB.npcSpells[tonumber(npcIDStr)]
+  if not abilities then return end
 
-  for _, spellID in ipairs(abilities) do
-    local spellName, _, _, _, _, _ = GetSpellInfo(spellID);
-    if spellName then
-      local icon = "";
-      local texture = GetSpellTexture(spellID);
-      if (texture ~= nil) then
-        icon = "|T" .. texture .. ":0|t";
-      end
-	  
-      if IsControlKeyDown() then
-        local spell = Spell:CreateFromSpellID(spellID);
-        spell:ContinueOnSpellLoad(function()
-		  GameTooltip:AddLine(icon .. " " .. spellName)
-          GameTooltip:AddLine(spell:GetSpellDescription(), 0.7, 0.7, 0.7, true);
-          if GameTooltip:GetWidth() > 700 then
-            GameTooltip:SetWidth(700);
-          end
-          GameTooltip:Show();
-        end);
-      end
-    end
+  for _, spellId in ipairs(abilities) do
+    CB:addSpellToTooltip(spellId)
   end
   
   if not IsControlKeyDown() then
-    GameTooltip:AddLine("(Ctrl for details)", 0.8, 0.8, 0.8);
-  end
-  
-  if GameTooltip:GetWidth() > 700 then
-    GameTooltip:SetWidth(700);
+    GameTooltip:AddLine("(Ctrl for details)", 0.8, 0.8, 0.8)
   end
 end
 
-local frame = CreateFrame("Frame", "ClassicBestiaryEvents");
+function CB:addSpellToTooltip(spellId)
+  local spellName = GetSpellInfo(spellId)
+  if not spellName then return end
+
+  local mechanic = DB.spellMechanic[spellId]
+  local r, g, b
+  local mechanicText = ""
+  if mechanic then
+    r, g, b = 0.9, 0.4, 0.4
+    mechanicText = " (" .. CB.mechanicMap[mechanic] .. ")"
+  else
+    r, g, b = 0.7, 0.7, 0.7
+  end
+
+  local iconTexture = GetSpellTexture(spellId)
+  local icon = iconTexture and "|T" .. iconTexture .. ":0|t " or ""
+
+  if IsControlKeyDown() then
+    local spell = Spell:CreateFromSpellID(spellId)
+    spell:ContinueOnSpellLoad(function()
+      local description = spell:GetSpellDescription()
+      if not description or string.len(description) <= 1 then return end
+	  
+      GameTooltip:AddLine(icon .. spellName .. mechanicText, r, g, b)
+      GameTooltip:AddLine("- " .. description, 0.7, 0.7, 0.7, true)
+      GameTooltip:Show()
+    end)
+  else
+      GameTooltip:AddLine(icon .. spellName .. mechanicText, r, g, b)
+  end
+end
+
+local frame = CreateFrame("Frame", "ClassicBestiaryEvents")
 frame:SetScript("OnEvent", function(self, event, ...)
   if event == "PLAYER_ENTERING_WORLD" then
-    GameTooltip:HookScript("OnTooltipSetUnit", onTooltip);
-    self:UnregisterEvent("PLAYER_ENTERING_WORLD");
+    GameTooltip:HookScript("OnTooltipSetUnit", function(...) CB:onTooltip(...) end)
+  self:UnregisterEvent("PLAYER_ENTERING_WORLD")
   elseif event == "MODIFIER_STATE_CHANGED" then
     if UnitExists("mouseover") then
-  	  GameTooltip:SetUnit("mouseover");
+      GameTooltip:SetUnit("mouseover")
     end
   end
-end);
+end)
 
-frame:RegisterEvent("PLAYER_ENTERING_WORLD");
-frame:RegisterEvent("MODIFIER_STATE_CHANGED");
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:RegisterEvent("MODIFIER_STATE_CHANGED")
